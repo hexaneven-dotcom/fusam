@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 釜山醫美深度導覽</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Busan Serenity (Almond: #FDFBF7, Sage: #5C6E5E, Earth: #8E7B6D) -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #FDFBF7;
+            color: #333;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(142, 123, 109, 0.1);
+            border-radius: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(142, 123, 109, 0.1);
+        }
+
+        .nav-btn.active {
+            background-color: #5C6E5E;
+            color: white;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 500px;
+        }
+
+        .region-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .specialist-border {
+            border-left: 4px solid #5C6E5E;
+        }
+
+        .status-pill {
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Application Structure Plan: 
+         1. 導言：簡介釜山醫美市場 2026 趨勢。
+         2. 區域地圖與生態：互動式區域切換，解釋西面、海雲臺等地的市場差異。
+         3. 診所名鑑：提供篩選功能，區分「高端客製」、「高效連鎖」與「性價比」三大類。
+         4. 價格導航：動態圖表展示熱門療程價格區間。
+         5. 2026 預算與財務：試算退稅取消後的 15% 回饋金，提升決策價值。
+         6. 安全指南：互動式「避雷針」核對清單。
+    -->
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 bg-white/90 border-b border-gray-100 py-4 px-6 mb-8">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-[#5C6E5E]">2026釜山醫美指南</h1>
+            <div class="hidden md:flex space-x-4">
+                <button onclick="scrollToSection('market-map')" class="text-gray-600 hover:text-[#5C6E5E] font-medium">區域地圖</button>
+                <button onclick="scrollToSection('clinic-list')" class="text-gray-600 hover:text-[#5C6E5E] font-medium">診所推薦</button>
+                <button onclick="scrollToSection('price-tool')" class="text-gray-600 hover:text-[#5C6E5E] font-medium">價格試算</button>
+                <button onclick="scrollToSection('safety-guide')" class="text-gray-600 hover:text-[#5C6E5E] font-medium">安全避雷</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-6 pb-20">
+        
+        <!-- Header Section -->
+        <header class="mb-16 text-center">
+            <span class="text-xs font-bold tracking-widest text-[#8E7B6D] uppercase">Busan Medical Beauty Report 2026</span>
+            <h2 class="text-4xl md:text-5xl font-bold mt-2 mb-6 text-gray-800">跨國醫療觀光全攻略</h2>
+            <p class="max-w-2xl mx-auto text-gray-600 leading-relaxed">
+                釜山已崛起為亞洲新興的醫療觀光樞紐。本應用程式將為您解析 2026 年最新政策變動下的診所評價、療程價格與風險管控策略，助您在美麗旅程中精準決策。
+            </p>
+        </header>
+
+        <!-- Section 1: Market Region Explorer -->
+        <section id="market-map" class="mb-16">
+            <div class="mb-8">
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">區域地緣經濟分析</h3>
+                <p class="text-gray-600">不同商圈代表了不同的消費策略。點擊下方標籤查看各區特色：</p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <button onclick="updateRegion('seomyeon')" id="btn-seomyeon" class="nav-btn active py-3 rounded-lg border border-[#5C6E5E] text-sm font-bold">西面 (核心區)</button>
+                <button onclick="updateRegion('haeundae')" id="btn-haeundae" class="nav-btn py-3 rounded-lg border border-[#5C6E5E] text-sm font-bold">海雲臺/Centum</button>
+                <button onclick="updateRegion('nampodong')" id="btn-nampodong" class="nav-btn py-3 rounded-lg border border-[#5C6E5E] text-sm font-bold">南浦洞</button>
+                <button onclick="updateRegion('deokcheon')" id="btn-deokcheon" class="nav-btn py-3 rounded-lg border border-[#5C6E5E] text-sm font-bold">德川</button>
+            </div>
+
+            <div id="region-display" class="glass-card p-8 flex flex-col md:flex-row items-center gap-8">
+                <!-- Content injected by JS -->
+            </div>
+        </section>
+
+        <!-- Section 2: Clinic Recommendations -->
+        <section id="clinic-list" class="mb-16">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
+                <div>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-2">指標性診所名鑑</h3>
+                    <p class="text-gray-600">整合真實評價與特色，依據您的需求選擇合適機構。</p>
+                </div>
+                <div class="flex gap-2">
+                    <select id="type-filter" onchange="renderClinics()" class="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5C6E5E]">
+                        <option value="all">所有類型</option>
+                        <option value="high">高端客製化</option>
+                        <option value="chain">高效連鎖品牌</option>
+                        <option value="value">高性價比/專項</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="clinic-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Content injected by JS -->
+            </div>
+        </section>
+
+        <!-- Section 3: Price Guide & Interactive Chart -->
+        <section id="price-tool" class="mb-16">
+            <div class="mb-8 text-center">
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">2026 核心療程價格指南</h3>
+                <p class="text-gray-600 italic">價格已含 10% 增值稅 (VAT Included)。</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                <div class="glass-card p-6">
+                    <h4 class="font-bold mb-4 flex items-center">
+                        <span class="mr-2">📊</span> 能量型儀器拉提價格區間 (KRW)
+                    </h4>
+                    <div class="chart-container">
+                        <canvas id="priceChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="bg-[#5C6E5E]/10 p-6 rounded-xl">
+                        <h4 class="font-bold text-[#5C6E5E] mb-4">💰 2026 財務策略工具</h4>
+                        <p class="text-sm text-gray-700 mb-4">韓國政府自 2026/1/1 起取消現場退稅。請使用下方工具試算平台回饋後的實付金額：</p>
+                        <div class="flex flex-col space-y-3">
+                            <label class="text-xs font-bold text-gray-500">輸入預計療程金額 (韓元)</label>
+                            <input type="number" id="input-price" placeholder="例如: 1,000,000" class="p-3 border border-gray-200 rounded-lg" oninput="calculateSavings()">
+                            <div class="grid grid-cols-2 gap-4 mt-4 text-center">
+                                <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                                    <div class="text-xs text-gray-500">15% 平台回饋</div>
+                                    <div id="savings-amount" class="text-lg font-bold text-[#5C6E5E]">0</div>
+                                </div>
+                                <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                                    <div class="text-xs text-gray-500">回饋後實付</div>
+                                    <div id="final-amount" class="text-lg font-bold text-gray-800">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Safety Checklist & Risk Management -->
+        <section id="safety-guide" class="mb-16">
+            <div class="glass-card bg-[#4A5D4E] text-white p-8 md:p-12 relative overflow-hidden">
+                <div class="relative z-10">
+                    <h3 class="text-3xl font-bold mb-6">赴韓醫美避雷與風險管控</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div>
+                            <div class="text-xl font-bold mb-2">❶ 辨識醫師資質</div>
+                            <p class="text-sm text-gray-200 leading-relaxed">
+                                認準「○○皮膚科的院」標籤。非專科醫師僅能標示為「診療科目：皮膚科」。請至大韓皮膚科醫師會官網核對身分。
+                            </p>
+                        </div>
+                        <div>
+                            <div class="text-xl font-bold mb-2">❷ 警戒流水線陷阱</div>
+                            <p class="text-sm text-gray-200 leading-relaxed">
+                                避免在尖峰時段預約低價大型診所。麻藥敷過久失效會導致劇烈疼痛，醫師在壓力下施打也可能影響精準度。
+                            </p>
+                        </div>
+                        <div>
+                            <div class="text-xl font-bold mb-2">❸ 醫療風險與維權</div>
+                            <p class="text-sm text-gray-200 leading-relaxed">
+                                對侵入性療程（Juvelook 填充、埋線）抱持最高謹慎。跨國求償難度極大，建議將療程限縮在低風險的光電管理。
+                            </p>
+                        </div>
+                    </div>
+                    <div class="mt-8 pt-8 border-t border-white/20 text-center">
+                        <p class="text-sm font-medium">💡 術後建議：採購含有積雪草 (Cica) 成份產品並入住安靜的飯店（如 The Muse）進行休養。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center text-gray-400 text-xs">
+            <p>© 2026 釜山醫療觀光深度解析報告 | 內容僅供參考，醫療行為請務必諮詢專業醫師</p>
+        </footer>
+    </main>
+
+    <!-- Visualization & Content Choices: 
+         - Region Explorer: Goal -> Organize geographic data -> Method: Tabbed navigation with card update -> Justification: Clarifies clinic distribution.
+         - Price Chart: Goal -> Compare -> Method: Chart.js Bar Chart -> Justification: Highlighting the massive price range for Ultherapy/Thermage.
+         - Cashback Tool: Goal -> Inform financial change -> Method: Real-time JS Calculator -> Justification: Directly addresses the 2026 VAT policy impact.
+         - Clinic Cards: Goal -> Inform -> Method: Semantic HTML cards with category filtering.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <script>
+        const regions = {
+            seomyeon: {
+                title: "西面 (Seomyeon)",
+                tag: "價格戰區",
+                desc: "釜山的醫療心臟，診所密度最高。主打高週轉率與極限性價比。最新儀器匯集地，但也容易遇到工廠化流水線管理。",
+                focus: ["高效儀器", "年輕客群", "大學生首選"],
+                icon: "🏢"
+            },
+            haeundae: {
+                title: "海雲臺/Centum City",
+                tag: "高端抗衰",
+                desc: "鄰近五星級酒店。診所定位精品、高隱私，著重幹細胞再生與全方位抗老化。適合追求靜謐體驗的旅客。",
+                focus: ["睡眠麻醉", "隱私空間", "再生醫學"],
+                icon: "🏖️"
+            },
+            nampodong: {
+                title: "南浦洞 (Nampodong)",
+                tag: "觀光整合",
+                desc: "緊鄰商圈與公園。診所多主打「快速恢復」的輕醫美，讓旅客在施打完微整後五分鐘即可重返購物行程。",
+                focus: ["玻尿酸", "肉毒桿菌", "術後觀光"],
+                icon: "🗼"
+            },
+            deokcheon: {
+                title: "德川 (Deokcheon)",
+                tag: "高性價比",
+                desc: "營運成本較低，能提供極具競爭力的基礎皮膚管理價格。深受在地人青睞，適合精打細算、懂韓文的深度玩家。",
+                focus: ["LDM水滴", "Aquapeel", "基礎護膚"],
+                icon: "🚇"
+            }
+        };
+
+        const clinics = [
+            { name: "美麗世界金陽濟張峰碩", region: "西面", type: "high", tags: ["JCI認證", "70台儀器"], desc: "40年歷史底蘊，張峰碩院長親自操刀，拒絕高壓推銷。" },
+            { name: "ELBLANC Clinic", region: "西面", type: "high", tags: ["全預約制", "五星級服務"], desc: "打破流水線模式，全程隔離隱私，專攻無痛麗珠蘭。" },
+            { name: "The Saeron Clinic", region: "蓮堤/海雲臺", type: "high", tags: ["幹細胞", "麻醉科專屬"], desc: "國家指定再生醫療機構，主打脂肪幹細胞抗老與落髮治療。" },
+            { name: "珍妍 (JRYN)", region: "西面", type: "chain", tags: ["800坪旗艦", "中文翻譯"], desc: "規模極大，服務親切，但尖峰時段需注意麻藥失效與等待時間。" },
+            { name: "麗芬聚 (PPEUM)", region: "連鎖", type: "chain", tags: ["數位化", "VIP包廂"], desc: "外國人極度友善，LINE介面透明預約，全年無休。" },
+            { name: "佰諾佰琪 (BANOBAGI)", region: "連鎖", type: "chain", tags: ["外國人同價", "無推銷"], desc: "以價格公平著稱，提供台灣專屬客服窗口。" },
+            { name: "FillsToks Clinic", region: "西面", type: "value", tags: ["鈦提升", "13年背景"], desc: "配備頂級備品(Dyson)，雷射儀器陣容齊全且價格合理。" },
+            { name: "SHE'S 整形外科", region: "南浦洞", type: "value", tags: ["6國翻譯", "飯店整合"], desc: "25年資歷，針對長住旅客提供完整的飯店配套休養方案。" },
+            { name: "Floria Clinic", region: "南浦洞", type: "value", tags: ["電波聯合治療", "內外同價"], desc: "鳳凰電波價格極具競爭力，空間設計極簡且透明。" }
+        ];
+
+        function updateRegion(key) {
+            const data = regions[key];
+            const display = document.getElementById('region-display');
+            
+            // Update UI buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${key}`).classList.add('active');
+
+            display.innerHTML = `
+                <div class="text-6xl md:text-8xl">${data.icon}</div>
+                <div>
+                    <span class="region-badge bg-[#5C6E5E] text-white mb-2">${data.tag}</span>
+                    <h4 class="text-2xl font-bold mb-3">${data.title}</h4>
+                    <p class="text-gray-600 mb-4 leading-relaxed">${data.desc}</p>
+                    <div class="flex flex-wrap gap-2">
+                        ${data.focus.map(f => `<span class="text-xs bg-gray-100 px-2 py-1 rounded"># ${f}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderClinics() {
+            const filter = document.getElementById('type-filter').value;
+            const grid = document.getElementById('clinic-grid');
+            grid.innerHTML = '';
+
+            const filtered = filter === 'all' ? clinics : clinics.filter(c => c.type === filter);
+
+            filtered.forEach(c => {
+                const card = document.createElement('div');
+                card.className = 'glass-card p-6 flex flex-col h-full specialist-border';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="text-xs font-bold text-[#8E7B6D]">${c.region}</span>
+                        <span class="status-pill ${c.type === 'high' ? 'bg-amber-100 text-amber-700' : 'bg-blue-50 text-blue-700'}">
+                            ${c.type === 'high' ? '高端客製' : (c.type === 'chain' ? '高效連鎖' : '專項性價')}
+                        </span>
+                    </div>
+                    <h5 class="text-lg font-bold mb-2">${c.name}</h5>
+                    <p class="text-sm text-gray-500 mb-4 flex-grow">${c.desc}</p>
+                    <div class="flex flex-wrap gap-1">
+                        ${c.tags.map(t => `<span class="text-[10px] border border-gray-200 px-2 py-0.5 rounded text-gray-400">${t}</span>`).join('')}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function initPriceChart() {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['美版超聲刀 (300發)', '韓版音波 (300發)', '鳳凰電波 (600發)', '鈦提升 (40kJ)', 'Juvelook Volume'],
+                    datasets: [
+                        {
+                            label: '低位價格',
+                            data: [440000, 69000, 1380000, 550000, 350000],
+                            backgroundColor: 'rgba(92, 110, 94, 0.4)',
+                        },
+                        {
+                            label: '高位價格',
+                            data: [1935000, 165000, 3388000, 790000, 650000],
+                            backgroundColor: 'rgba(92, 110, 94, 0.8)',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: { 
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.x.toLocaleString() + ' KRW';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { beginAtZero: true, grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function calculateSavings() {
+            const input = document.getElementById('input-price').value;
+            const savings = Math.round(input * 0.15);
+            const final = input - savings;
+
+            document.getElementById('savings-amount').innerText = savings.toLocaleString() + ' KRW';
+            document.getElementById('final-amount').innerText = final.toLocaleString() + ' KRW';
+        }
+
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Initialize
+        window.onload = () => {
+            updateRegion('seomyeon');
+            renderClinics();
+            initPriceChart();
+        };
+    </script>
+</body>
+</html>
